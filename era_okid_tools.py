@@ -1,15 +1,15 @@
 # Import necessary packages
-import warnings # Ignore user warnings
-import itertools as it # Readable nested for loops
-from pathlib import Path # Filepaths
-import typing # Argument / output type checking
-import numpy as np # N-dim arrays + math
-import scipy.linalg as spla # Complex linear algebra
-import scipy.signal as spsg # Signal processing
-import matplotlib.pyplot as plt # Plots
-import matplotlib.figure as figure # Figure documentation
-import sympy # Symbolic math + pretty printing
+import itertools as it  # Readable nested for loops
+import typing  # Argument / output type checking
+import warnings  # Ignore user warnings
+from pathlib import Path  # Filepaths
 
+import matplotlib.figure as figure  # Figure documentation
+import matplotlib.pyplot as plt  # Plots
+import numpy as np  # N-dim arrays + math
+import scipy.linalg as spla  # Complex linear algebra
+import scipy.signal as spsg  # Signal processing
+import sympy  # Symbolic math + pretty printing
 
 def etch(sym: str, mat: np.ndarray):
     display(sympy.Eq(sympy.Symbol(sym),
