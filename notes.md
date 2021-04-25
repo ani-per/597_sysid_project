@@ -10,4 +10,3 @@
 * Wheel masses: 20
 * Max RPM: 7500
 * Engine "MOI": 1
-* 
