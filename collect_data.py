@@ -42,6 +42,7 @@ def collect_data(
     start_time = car_state.timestamp
 
     i_max = int(np.ceil(t_max / dt))
+    t = np.zeros([1, i_max])
     U = np.zeros([2, i_max])
     Z = np.zeros([6, i_max])
     driving_states = []
@@ -59,6 +60,7 @@ def collect_data(
         )
         dcm_nb = np.array([[cyaw, syaw], [-syaw, cyaw]])
 
+        t[:, i] = dt * i
         U[:, i] = np.array([current_controls.throttle, current_controls.steering])
         Z[:2, i] = (
             current_state.kinematics_estimated.position.to_numpy_array()[:2] + offset
@@ -137,7 +139,7 @@ def collect_data(
     car_controls.throttle = 0
     car_controls.steering = 0
     client.setCarControls(car_controls)
-    return U, Z, driving_df
+    return t, U, Z, driving_df
 
 
 # Connect to the AirSim simulator
@@ -148,19 +150,19 @@ offset = np.array([40, 0])
 
 reset_client(client)
 offset_client(client, offset)
-U, Z, driving_df = collect_data(
+t, U, Z, driving_df = collect_data(
     client=client,
     rng=np.random.default_rng(seed=100),
-    dt=0.1,
+    dt=0.2,
     t_max=20,
     offset=offset,
 )
 driving_df.to_csv(data_dir / f"data_train.csv", index=False)
-np.savez(data_dir / f"data_train.npz", U=U, Z=Z)
+np.savez(data_dir / f"data_train.npz", t=t, U=U, Z=Z)
 
 reset_client(client)
 offset_client(client, offset)
-U, Z, driving_df = collect_data(
+t, U, Z, driving_df = collect_data(
     client=client,
     rng=np.random.default_rng(seed=10),
     dt=0.1,
@@ -168,4 +170,4 @@ U, Z, driving_df = collect_data(
     offset=offset,
 )
 driving_df.to_csv(data_dir / f"data_test.csv", index=False)
-np.savez(data_dir / f"data_test.npz", U=U, Z=Z)
+np.savez(data_dir / f"data_test.npz", t=t, U=U, Z=Z)
