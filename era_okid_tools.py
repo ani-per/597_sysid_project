@@ -213,7 +213,7 @@ def okid(Z: np.ndarray, U: np.ndarray,
     m, l = Z.shape
     assert l == l_u
     V = np.concatenate([U, Z], 0)
-    assert (max([alpha + beta, (n/m) + (n/r)]) <= l_0) and (l_0 <= (l - r)/(r + m)) # Boundary conditions
+    # assert (max([alpha + beta, (n/m) + (n/r)]) <= l_0) and (l_0 <= (l - r)/(r + m)) # Boundary conditions
 
     # Form observer
     Y_2_Z = np.zeros([r + (r + m)*l_0, l])
