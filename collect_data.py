@@ -3,6 +3,7 @@ from pathlib import Path  # Filepaths
 import typing  # Argument / output type checking
 import numpy as np  # N-dim arrays + math
 import scipy.linalg as spla  # Complex linear algebra
+import scipy.signal as spsg  # Signal processing
 import pandas as pd  # Dataframes
 import airsim  # Airsim APIs
 import time  # Timing/sleeping
@@ -31,10 +32,10 @@ def offset_client(client: airsim.client.CarClient, offset: np.array):
 
 def collect_data(
     client: airsim.client.CarClient,
-    rng: np.random.Generator,
     dt: float,
     t_max: float,
-    offset,
+    rng: np.random.Generator,
+    offset: np.array = np.array([0, 0]),
 ) -> typing.Tuple[np.array, np.array, np.array, pd.DataFrame]:
 
     car_controls = airsim.CarControls()
@@ -45,12 +46,25 @@ def collect_data(
     t = np.zeros([1, i_max])
     U = np.zeros([2, i_max])
     Z = np.zeros([6, i_max])
-    driving_states = []
 
+    driving_states = []
+    throttle_mag = rng.uniform(0.25, 0.5)
+    throttle_freq = rng.uniform(0, 1)
+    steering_mag = rng.normal(0, 0.05)
+    print(f"{throttle_mag=}, {throttle_freq=}, {steering_mag=}")
     for i in range(i_max):
+
+        # car_controls.throttle = rng.uniform(0.2, 0.3)
+        # car_controls.steering = rng.uniform(-0.1, 0.1)
+        car_controls.throttle = throttle_mag * (
+            1 + np.sin(2 * np.pi * throttle_freq * dt * i)
+        )
+        car_controls.steering = steering_mag
+        client.setCarControls(car_controls)
+
         current_state = client.getCarState()
-        current_controls = client.getCarControls()
         current_time = np.around((current_state.timestamp - start_time) / 1e9, 3)
+        current_controls = client.getCarControls()
 
         cyaw = np.cos(
             airsim.to_eularian_angles(current_state.kinematics_estimated.orientation)[2]
@@ -129,10 +143,6 @@ def collect_data(
         }
         driving_states.append(current_state_dict)
 
-        car_controls.throttle = rng.uniform(0, 1)
-        car_controls.steering = rng.uniform(-1, 1)
-        client.setCarControls(car_controls)
-
         time.sleep(dt)
     driving_df = pd.DataFrame(driving_states)
 
@@ -146,15 +156,15 @@ def collect_data(
 client = airsim.CarClient()
 client.enableApiControl(True)
 
-offset = np.array([40, 0])
+offset = np.array([40.5, -7.5])
 
 reset_client(client)
 offset_client(client, offset)
 t, U, Z, driving_df = collect_data(
     client=client,
     rng=np.random.default_rng(seed=100),
-    dt=0.2,
-    t_max=20,
+    dt=0.1,
+    t_max=15,
     offset=offset,
 )
 driving_df.to_csv(data_dir / f"data_train.csv", index=False)
@@ -164,10 +174,12 @@ reset_client(client)
 offset_client(client, offset)
 t, U, Z, driving_df = collect_data(
     client=client,
-    rng=np.random.default_rng(seed=10),
+    rng=np.random.default_rng(seed=5),
     dt=0.1,
-    t_max=20,
+    t_max=15,
     offset=offset,
 )
 driving_df.to_csv(data_dir / f"data_test.csv", index=False)
 np.savez(data_dir / f"data_test.npz", t=t, U=U, Z=Z)
+
+reset_client(client)
