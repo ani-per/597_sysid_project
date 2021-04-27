@@ -59,8 +59,12 @@ def collect_data(
         # car_controls.throttle = throttle_mag * (
         #     1 + np.sin(2 * np.pi * throttle_freq * dt * i)
         # )
-        car_controls.throttle = throttle_mag
-        car_controls.steering = steering_mag
+        if i < 30:
+            car_controls.throttle = throttle_mag
+            car_controls.steering = steering_mag
+        else:
+            car_controls.throttle = 0
+            car_controls.steering = 0
         client.setCarControls(car_controls)
 
         current_state = client.getCarState()
@@ -165,7 +169,7 @@ t, U, Z, driving_df = collect_data(
     client=client,
     rng=np.random.default_rng(seed=100),
     dt=0.1,
-    t_max=10,
+    t_max=8,
     offset=offset,
 )
 driving_df.to_csv(data_dir / f"data_train.csv", index=False)
@@ -177,7 +181,7 @@ t, U, Z, driving_df = collect_data(
     client=client,
     rng=np.random.default_rng(seed=5),
     dt=0.1,
-    t_max=10,
+    t_max=8,
     offset=offset,
 )
 driving_df.to_csv(data_dir / f"data_test.csv", index=False)
