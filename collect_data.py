@@ -224,8 +224,8 @@ for sim in range(n_sim):
     )
     # driving_df.to_csv(data_dir / f"data_train.csv", index=False)
 
-np.savez(data_dir / f"data_test.npz", t=t_test, U=U_test, Z=Z_test)
-spio.savemat(data_dir / f"data_test.mat", {"t": t_test, "U": U_test, "Z": Z_test})
+np.savez(data_dir / f"data_test_bulk.npz", t=t_test, U=U_test, Z=Z_test)
+spio.savemat(data_dir / f"data_test_bulk.mat", {"t": t_test, "U": U_test, "Z": Z_test})
 
 reset_client(client)
 print(f"Elapsed time: {(time.time() - start_time)/60:0.4f} minutes.")
