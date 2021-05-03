@@ -21,36 +21,22 @@ U_test = squeeze(permute(test_data.U, [2, 3, 1]));
 Z_test = squeeze(permute(test_data.Z, [2, 3, 1]));
 n_sim = size(t_train, 2);
 
-i_start_train = zeros(n_sim, 1) - 1;
-t_start_train = zeros(n_sim, 1) - 1;
-v_x_train = zeros(n_sim, 1) - 1;
-for n = 1:n_sim
-    U_n = Z_train(3, :, n);
+i_start = zeros(n_sim) - 1;
+t_start = zeros(n_sim) - 1;
+for n = 1:n_train
+    U_n = Z_train(3, :, n)
     for i = 1:length(U_n)
+        % U_n_filt = movmean(U_n(:, i:end), 4);
+        U_n(:, i:end);
         pf = polyfit(t_train(i:end, n), U_n(:, i:end), 1);
-        if (abs(pf(1)) < 1e-3)
-            i_start_train(n) = i;
-            t_start_train(n) = t_train(i);
-            v_x_train(n) = mean(U_n(:, i:end));
+        slope = pf(1);
+        if (abs(slope) < 1e-3)
+            i_start(n) = i;
+            t_start(n) = t_trai
             break 
         end
     end
-end
-
-i_start_test = zeros(n_sim, 1) - 1;
-t_start_test = zeros(n_sim, 1) - 1;
-v_x_test = zeros(n_sim, 1) - 1;
-for n = 1:n_sim
-    U_n = Z_test(3, :, n);
-    for i = 1:length(U_n)
-        pf = polyfit(t_test(i:end, n), U_n(:, i:end), 1);
-        if (abs(pf(1)) < 1e-3)
-            i_start_test(n) = i;
-            t_start_test(n) = t_test(i);
-            v_x_test(n) = mean(U_n(:, i:end));
-            break 
-        end
-    end
+    t_train(i_start)
 end
 
 % input = [2];
