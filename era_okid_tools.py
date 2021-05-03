@@ -1,26 +1,23 @@
-# Import necessary packages
+# Logistic packages
 import itertools as it  # Readable nested for loops
 import typing  # Argument / output type checking
 import warnings  # Ignore user warnings
 from pathlib import Path  # Filepaths
 
-import matplotlib.figure as figure  # Figure documentation
-import matplotlib.pyplot as plt  # Plots
+# Numeric packages
 import numpy as np  # N-dim arrays + math
 import scipy.linalg as spla  # Complex linear algebra
 import scipy.signal as spsg  # Signal processing
 import sympy  # Symbolic math + pretty printing
 
-def etch(sym: str, mat: np.ndarray):
-    display(sympy.Eq(sympy.Symbol(sym),
-                     sympy.Matrix(mat.round(5)),
-                     evaluate = False))
-    pass
+# Plotting packages
+import matplotlib.figure as figure  # Figure documentation
+import matplotlib.pyplot as plt  # Plots
 
 
-def d2c(A: np.ndarray, B: np.ndarray,
-        dt: float) \
-        -> typing.Tuple[np.ndarray, np.ndarray]:
+def d2c(
+    A: np.ndarray, B: np.ndarray, dt: float
+) -> typing.Tuple[np.ndarray, np.ndarray]:
     """Convert discrete linear state space model to continuous linear state space model.
 
     :param np.ndarray A:
@@ -28,20 +25,24 @@ def d2c(A: np.ndarray, B: np.ndarray,
     :param float dt: Timestep duration
     :return: (A_c, B_c) Continuous-time linear state space model
     """
-    A_c = spla.logm(A)/dt
-    if np.linalg.cond(A - np.eye(*A.shape)) < 1/np.spacing(1):
+    A_c = spla.logm(A) / dt
+    if np.linalg.cond(A - np.eye(*A.shape)) < 1 / np.spacing(1):
         B_c = A_c @ spla.inv(A - np.eye(*A.shape)) @ B
     else:
         B_temp = np.zeros(A_c.shape)
         for i in range(200):
-            B_temp += (1/((i + 1)*np.math.factorial(i)))*np.linalg.matrix_power(A_c, i)*(dt**(i + 1))
+            B_temp += (
+                (1 / ((i + 1) * np.math.factorial(i)))
+                * np.linalg.matrix_power(A_c, i)
+                * (dt ** (i + 1))
+            )
         B_c = B @ spla.inv(B_temp)
     return A_c, B_c
 
 
-def c2d(A_c: np.ndarray, B_c: np.ndarray,
-        dt: float) \
-        -> typing.Tuple[np.ndarray, np.ndarray]:
+def c2d(
+    A_c: np.ndarray, B_c: np.ndarray, dt: float
+) -> typing.Tuple[np.ndarray, np.ndarray]:
     """Convert continuous linear state space model to discrete linear state space model.
 
     :param np.ndarray A_c:
@@ -49,21 +50,30 @@ def c2d(A_c: np.ndarray, B_c: np.ndarray,
     :param float dt: Timestep duration
     :return: (A, B) Discrete-time linear state space model
     """
-    A = spla.expm(A_c*dt)
-    if np.linalg.cond(A_c) < 1/np.spacing(1):
+    A = spla.expm(A_c * dt)
+    if np.linalg.cond(A_c) < 1 / np.spacing(1):
         B = (A - np.eye(*A.shape)) @ spla.inv(A_c) @ B_c
     else:
         B_temp = np.zeros(A_c.shape)
         for i in range(200):
-            B_temp += (1/((i + 1)*np.math.factorial(i)))*np.linalg.matrix_power(A_c, i)*(dt**(i + 1))
+            B_temp += (
+                (1 / ((i + 1) * np.math.factorial(i)))
+                * np.linalg.matrix_power(A_c, i)
+                * (dt ** (i + 1))
+            )
         B = B_temp @ B_c
     return A, B
 
 
-def sim_ss(A: np.ndarray, B: np.ndarray, C: np.ndarray, D: np.ndarray,
-           X_0: np.ndarray, U: np.ndarray,
-           nt: int) \
-        -> typing.Tuple[np.ndarray, np.ndarray]:
+def sim_ss(
+    A: np.ndarray,
+    B: np.ndarray,
+    C: np.ndarray,
+    D: np.ndarray,
+    X_0: np.ndarray,
+    U: np.ndarray,
+    nt: int,
+) -> typing.Tuple[np.ndarray, np.ndarray]:
     """Simulate linear state space model via ZOH.
 
     :param np.ndarray A:
@@ -86,21 +96,20 @@ def sim_ss(A: np.ndarray, B: np.ndarray, C: np.ndarray, D: np.ndarray,
 
     X = np.concatenate([X_0, np.zeros([X_0.shape[-2], nt])], 1)
     Z = np.zeros([C.shape[-2], nt])
-    if U.shape[-1] == 1: # Impulse
+    if U.shape[-1] == 1:  # Impulse
         X[:, 1] = (A @ X[:, 0]) + (B @ U[:, 0])
         Z[:, 0] = (C @ X[:, 0]) + (D @ U[:, 0])
         for i in range(1, nt):
-            X[:, i + 1] = (A @ X[:, i])
-            Z[:, i] = (C @ X[:, i])
-    else: # Continual
+            X[:, i + 1] = A @ X[:, i]
+            Z[:, i] = C @ X[:, i]
+    else:  # Continual
         for i in range(nt):
             X[:, i + 1] = (A @ X[:, i]) + (B @ U[:, i])
             Z[:, i] = (C @ X[:, i]) + (D @ U[:, i])
     return X, Z
 
 
-def markov_sim(Y: np.ndarray, U: np.ndarray) \
-        -> np.ndarray:
+def markov_sim(Y: np.ndarray, U: np.ndarray) -> np.ndarray:
     """Obtain observations from Markov parameters and inputs, for zero initial conditions
 
     :param np.ndarray Y: Markov parameter matrix
@@ -109,17 +118,19 @@ def markov_sim(Y: np.ndarray, U: np.ndarray) \
     :rtype: np.ndarray
     """
     l, m, r = Y.shape
-    Y_2_Z = np.zeros([r*l, l])
+    Y_2_Z = np.zeros([r * l, l])
     Y_2_Z[:r, :] = U
     for i in range(1, l):
-        Y_2_Z[r*i:r*(i + 1), :] = np.concatenate([np.zeros([r, i]), U[:, 0:(-i)]], 1)
+        Y_2_Z[r * i : r * (i + 1), :] = np.concatenate(
+            [np.zeros([r, i]), U[:, 0:(-i)]], 1
+        )
     Z = np.concatenate(Y, 1) @ Y_2_Z
     return Z
 
 
-def ss2markov(A: np.ndarray, B: np.ndarray, C: np.ndarray, D: np.ndarray,
-              nt: int) \
-        -> np.ndarray:
+def ss2markov(
+    A: np.ndarray, B: np.ndarray, C: np.ndarray, D: np.ndarray, nt: int
+) -> np.ndarray:
     """Get Markov parameters from state space model.
 
     :param np.ndarray A:
@@ -138,8 +149,7 @@ def ss2markov(A: np.ndarray, B: np.ndarray, C: np.ndarray, D: np.ndarray,
     return Y
 
 
-def Hankel(Y: np.ndarray, alpha: int, beta: int, i: int = 0) \
-        -> np.ndarray:
+def Hankel(Y: np.ndarray, alpha: int, beta: int, i: int = 0) -> np.ndarray:
     """Hankel matrix.
 
     :param Y: Markov parameter matrix
@@ -151,18 +161,17 @@ def Hankel(Y: np.ndarray, alpha: int, beta: int, i: int = 0) \
     """
     assert (len(Y) - 1) >= (i + alpha + beta - 1)
     m, r = Y.shape[-2:]
-    H = np.zeros([alpha*m, beta*r])
+    H = np.zeros([alpha * m, beta * r])
     for j in range(beta):
-        H[:, (j*r):((j + 1)*r)] = Y[(i + 1 + j):(i + alpha + 1 + j)].reshape([alpha*m, r])
+        H[:, (j * r) : ((j + 1) * r)] = Y[(i + 1 + j) : (i + alpha + 1 + j)].reshape(
+            [alpha * m, r]
+        )
     return H
 
 
-def era(Y: np.ndarray, alpha: int, beta: int, n: int) \
-        -> typing.Tuple[np.ndarray,
-                        np.ndarray,
-                        np.ndarray,
-                        np.ndarray,
-                        np.ndarray]:
+def era(
+    Y: np.ndarray, alpha: int, beta: int, n: int
+) -> typing.Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     """Eigensystem Realization Algorithm (ERA).
 
     :param np.ndarray Y: Markov parameter matrix
@@ -174,7 +183,7 @@ def era(Y: np.ndarray, alpha: int, beta: int, n: int) \
     """
     assert (len(Y) - 1) >= (alpha + beta - 1)
     m, r = Y.shape[-2:]
-    assert (alpha >= (n/m)) and (beta >= (n/r))
+    assert (alpha >= (n / m)) and (beta >= (n / r))
     H_0 = Hankel(Y, alpha, beta, 0)
     print(f"Rank of H(0): {np.linalg.matrix_rank(H_0)}")
     H_1 = Hankel(Y, alpha, beta, 1)
@@ -187,17 +196,14 @@ def era(Y: np.ndarray, alpha: int, beta: int, n: int) \
 
     E_r = np.concatenate([np.eye(r), np.tile(np.zeros([r, r]), beta - 1)], 1).T
     E_m = np.concatenate([np.eye(m), np.tile(np.zeros([m, m]), alpha - 1)], 1).T
-    A = np.diag(S_n**(-1/2)) @ U_n.T @ H_1 @ V_n @ np.diag(S_n**(-1/2))
-    B = np.diag(S_n**(1/2)) @ V_n.T @ E_r
-    C = E_m.T @ U_n @ np.diag(S_n**(1/2))
+    A = np.diag(S_n ** (-1 / 2)) @ U_n.T @ H_1 @ V_n @ np.diag(S_n ** (-1 / 2))
+    B = np.diag(S_n ** (1 / 2)) @ V_n.T @ E_r
+    C = E_m.T @ U_n @ np.diag(S_n ** (1 / 2))
     D = Y[0]
     return A, B, C, D, S
 
 
-def okid(Z: np.ndarray, U: np.ndarray,
-         l_0: int,
-         alpha: int, beta: int,
-         n: int):
+def okid(Z: np.ndarray, U: np.ndarray, l_0: int, alpha: int, beta: int, n: int):
     """Observer Kalman Identification Algorithm (OKID).
 
     :param np.ndarray Z: Observation vector array over duration
@@ -216,29 +222,41 @@ def okid(Z: np.ndarray, U: np.ndarray,
     # assert (max([alpha + beta, (n/m) + (n/r)]) <= l_0) and (l_0 <= (l - r)/(r + m)) # Boundary conditions
 
     # Form observer
-    Y_2_Z = np.zeros([r + (r + m)*l_0, l])
+    Y_2_Z = np.zeros([r + (r + m) * l_0, l])
     Y_2_Z[:r, :] = U
     for i in range(1, l_0 + 1):
-        Y_2_Z[((i*r) + ((i - 1)*m)):(((i + 1)*r) + (i*m)), :] = np.concatenate([np.zeros([r + m, i]), V[:, 0:(-i)]], 1)
+        Y_2_Z[
+            ((i * r) + ((i - 1) * m)) : (((i + 1) * r) + (i * m)), :
+        ] = np.concatenate([np.zeros([r + m, i]), V[:, 0:(-i)]], 1)
     # Find Observer Markov parameters via least-squares
     Y_obs = Z @ spla.pinv2(Y_2_Z)
-    Y_bar_1 = np.array(list(it.chain.from_iterable([Y_obs[:, i:(i + r)]
-                                                    for i in range(r, r + (r + m)*l_0, r + m)]))).reshape([l_0, m, r])
-    Y_bar_2 = -np.array(list(it.chain.from_iterable([Y_obs[:, i:(i + m)]
-                                                     for i in range(2*r, r + (r + m)*l_0, r + m)]))).reshape([l_0, m, m])
+    Y_bar_1 = np.array(
+        list(
+            it.chain.from_iterable(
+                [Y_obs[:, i : (i + r)] for i in range(r, r + (r + m) * l_0, r + m)]
+            )
+        )
+    ).reshape([l_0, m, r])
+    Y_bar_2 = -np.array(
+        list(
+            it.chain.from_iterable(
+                [Y_obs[:, i : (i + m)] for i in range(2 * r, r + (r + m) * l_0, r + m)]
+            )
+        )
+    ).reshape([l_0, m, m])
 
     # Obtain Markov parameters from Observer Markov parameters
     Y = np.zeros([l_0 + 1, m, r])
     Y[0] = Y_obs[:, :r]
     for k in range(1, l_0 + 1):
-        Y[k] = Y_bar_1[k - 1] - \
-               np.array([Y_bar_2[i] @ Y[k - (i + 1)]
-                         for i in range(k)]).sum(axis = 0)
+        Y[k] = Y_bar_1[k - 1] - np.array(
+            [Y_bar_2[i] @ Y[k - (i + 1)] for i in range(k)]
+        ).sum(axis=0)
     # Obtain Observer Gain Markov parameters from Observer Markov parameters
     Y_og = np.zeros([l_0, m, m])
     Y_og[0] = Y_bar_2[0]
     for k in range(1, l_0):
-        Y_og[k] = Y_bar_2[k] - \
-                  np.array([Y_bar_2[i] @ Y_og[k - (i + 1)]
-                            for i in range(k - 1)]).sum(axis = 0)
+        Y_og[k] = Y_bar_2[k] - np.array(
+            [Y_bar_2[i] @ Y_og[k - (i + 1)] for i in range(k - 1)]
+        ).sum(axis=0)
     return Y, Y_og
