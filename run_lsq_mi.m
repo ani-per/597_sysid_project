@@ -12,7 +12,7 @@ warning("off", "all");
 
 %% Data formatting
 
-airsim_data = load(fullfile(pwd, "data", "data_bulk.mat"));
+airsim_data = load(fullfile(pwd, "data", "data_bulk_mi.mat"));
 t = squeeze(permute(airsim_data.t, [2, 3, 1]));
 U = squeeze(permute(airsim_data.U, [2, 3, 1]));
 Z = squeeze(permute(airsim_data.Z, [2, 3, 1]));
@@ -119,14 +119,14 @@ export_fig(fullfile(root, "hist_e_m-I"), "-png", "-pdf");
 
 %% Least squares function to estimate mass and moment of inertia
 
-function [a, rms_e] = lsq_mi(u, x, dt, v_x, l, c)
+function [q, rms_e] = lsq_mi(u, x, dt, v_x, l, c)
     arguments
         u (:, 1) double % Input vector
         x (:, 2) double % (Observed) state vector
-        dt (1, 1) double % Timestep
-        v_x (1, 1) double % Longitudinal velocity
-        l (1, 1) double = 5 % Car length
-        c (1, 1) double = -10000 % Stiffness coefficient for both wheels
+        dt (1, 1) double % Timestep in s
+        v_x (1, 1) double % Longitudinal velocity in m/s
+        l (1, 1) double % Car length in m
+        c (1, 1) double % Stiffness coefficient for both tires in N/rad
     end
 
     assert(height(u) == height(x));
@@ -138,32 +138,6 @@ function [a, rms_e] = lsq_mi(u, x, dt, v_x, l, c)
     
     x_fd = reshape(diff(x), [], 1)/dt + [v_x*r; zeros(size(r))];
     H = [(2*c/v_x)*v_y - c*delta, zeros(nt - 1, 1); zeros(nt - 1, 1), ((l^2*c)/(2*v_x))*r - (l*c/2)*delta];
-    a = (H'*H)\H'*x_fd;
-    rms_e = sqrt((sum(reshape(x_fd - H*a, nt - 1, 2), 1).^2)/(nt - 1));
-end
-
-%% Least squares function to estimate cornering stiffness coefficients
-
-function [a, rms_e] = lsq_cc(u, x, dt, v_x, m, I)
-    arguments
-        u (:, 1) double % Input vector
-        x (:, 2) double % (Observed) state vector
-        dt (1, 1) double % Timestep
-        v_x (1, 1) double % Longitudinal velocity
-        l (1, 1) double = 5 % Car length
-        m (1, 1) double = -10000 % Car mass
-        I (1, 1) double = 5e3 % Car yaw moment of inertia
-    end
-
-    assert(height(u) == height(x));
-    
-    nt = height(u);
-    v_y = x(1:(end - 1), 1);
-    r = x(1:(end - 1), 2);
-    delta = u(1:(end - 1));
-    
-    x_fd = reshape(diff(x), [], 1)/dt + [v_x*r; zeros(size(r))];
-    H = [(2*c/v_x)*v_y - c*delta, zeros(nt - 1, 1); zeros(nt - 1, 1), ((l^2*c)/(2*v_x))*r - (l*c/2)*delta];
-    a = (H'*H)\H'*x_fd;
-    rms_e = sqrt((sum(reshape(x_fd - H*a, nt - 1, 2), 1).^2)/(nt - 1));
+    q = (H'*H)\H'*x_fd;
+    rms_e = sqrt((sum(reshape(x_fd - H*q, nt - 1, 2), 1).^2)/(nt - 1));
 end

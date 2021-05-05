@@ -5,17 +5,17 @@
 close all; clear all;
 
 %%
-% |startup| is a script I wrote that sets up some plot properties and directories for saving the plots.
+% |startup| is a script cr wrote that sets up some plot properties and directories for saving the plots.
 
 startup;
 warning("off", "all");
 
 %% Data formatting
 
-airsim_data = load(fullfile(pwd, "data", "data_bulk.mat"));
-t = squeeze(permute(airsim_data.t, [2, 3, 1]));
-U = squeeze(permute(airsim_data.U, [2, 3, 1]));
-Z = squeeze(permute(airsim_data.Z, [2, 3, 1]));
+airsicf_data = load(fullfile(pwd, "data", "data_bulk_cc.mat"));
+t = squeeze(permute(airsicf_data.t, [2, 3, 1]));
+U = squeeze(permute(airsicf_data.U, [2, 3, 1]));
+Z = squeeze(permute(airsicf_data.Z, [2, 3, 1]));
 n_sim = size(t, 2);
 dt = t(2, 1) - t(1, 1);
 
@@ -44,49 +44,49 @@ U = U(input, :, :);
 obs = [4, 6];
 Z = Z(obs, :, :);
 
-l = 5;
-c = -10000;
-m = zeros(n_sim, 1);
-I = zeros(n_sim, 1);
+m = 2500;
+I = 
+cf = zeros(n_sim, 1);
+cr = zeros(n_sim, 1);
 rms_e = zeros(n_sim, 2);
 for sim = 1:n_sim
-    [a, rms_e(sim, :)] = lsq_mi(U(:, :, sim)', Z(:, :, sim)', dt, v_x(sim), l, c);
-    m(sim) = 1/a(1);
-    I(sim) = 1/a(2);
+    [a, rms_e(sim, :)] = lsq_cc(U(:, :, sim)', Z(:, :, sim)', dt, v_x(sim));
+    cf(sim) = a(1);
+    cr(sim) = a(2);
 end
 
 %% Plots
 
 %%% Parameter Plots
 
-which_plot = (m <= 2e4) & (m >= 0);
-m_plot = m(which_plot);
-I_plot = I(which_plot);
+which_plot = (cf ~= 0);
+cf_plot = cf(which_plot);
+cr_plot = cr(which_plot);
 
 n_bins = 50;
 mi_hist = figure("Position", fig_size);
 tiles = tiledlayout(2, 1, "Padding", "none", "TileSpacing", "compact");
 nexttile;
-histogram(m_plot, n_bins); hold on;
-xline(mean(m_plot), "-", sprintf("Mean: %0.0f $kg$", mean(m_plot)), ...
+histogram(cf_plot, n_bins); hold on;
+xline(mean(cf_plot), "-", sprintf("Mean: %0.0f $\\frac{N}{rad}$", mean(cf_plot)), ...
     "Color", colors(2, :), "LineWidth", 2*line_width, "Interpreter", "latex", "FontSize", font_size);
-xline(median(m_plot), "-", sprintf("Median: %0.0f $kg$", median(m_plot)), ...
+xline(median(cf_plot), "-", sprintf("Median: %0.0f $\\frac{N}{rad}$", median(cf_plot)), ...
     "Color", colors(3, :), "LineWidth", 2*line_width, "Interpreter", "latex", "FontSize", font_size, ...
     "LabelHorizontalAlignment", "left");
-xlabel("Mass ($m$) [$kg$]");
+xlabel("Front Tire Cornering Stiffnes ($C_{{\alpha}f}$) [$\\frac{N}{rad}$]");
 nexttile;
-histogram(I_plot, n_bins); hold on;
-xline(mean(I_plot), "-", sprintf("Mean: %0.0f $kg{\\cdot}m^2$", mean(I_plot)), ...
+histogram(cr_plot, n_bins); hold on;
+xline(mean(cr_plot), "-", sprintf("Mean: %0.0f $\\frac{N}{rad}$", mean(cr_plot)), ...
     "Color", colors(2, :), "LineWidth", 2*line_width, "Interpreter", "latex", "FontSize", font_size);
-xline(median(I_plot), "-", sprintf("Median: %0.0f $kg{\\cdot}m^2$", median(I_plot)), ...
+xline(median(cr_plot), "-", sprintf("Median: %0.0f $\\frac{N}{rad}$", median(cr_plot)), ...
     "Color", colors(3, :), "LineWidth", 2*line_width, "Interpreter", "latex", "FontSize", font_size, ...
     "LabelHorizontalAlignment", "left");
-xlabel("Moment of Inertia ($I_{zz}$) [$kg{\cdot}m^2$]");
+xlabel("Rear Tire Cornering Stiffnes ($C_{{\alpha}r}$) [$\\frac{N}{rad}$]");
 title(tiles, ...
     [sprintf("Histogram of Parameters Estimated via Least-Squares over %i Simulations", sum(which_plot)); ...
-    sprintf("$l = %i$ m, $c = %i$ $\\frac{N}{rad}$", l, c)], ...
+    sprintf("$l = %i$ cf, $c = %i$ $\\frac{N}{rad}$", l, c)], ...
     "Interpreter", "Latex", "FontSize", font_size);
-export_fig(fullfile(root, "hist_m-I"), "-png", "-pdf");
+export_fig(fullfile(root, "hist_cc"), "-png", "-pdf");
 
 %%% RMS Error Plots
 
@@ -97,12 +97,12 @@ mi_e_hist = figure("Position", fig_size);
 tiles = tiledlayout(2, 1, "Padding", "none", "TileSpacing", "compact");
 nexttile;
 histogram(rms_e_plot(:, 1), n_bins); hold on;
-xline(mean(rms_e_plot(:, 1)), "-", sprintf("Mean: %0.2f $\\frac{m}{s^2}$", mean(rms_e_plot(:, 1))), ...
+xline(mean(rms_e_plot(:, 1)), "-", sprintf("Mean: %0.2f $\\frac{cf}{s^2}$", mean(rms_e_plot(:, 1))), ...
     "Color", colors(2, :), "LineWidth", 2*line_width, "Interpreter", "latex", "FontSize", font_size);
-xline(median(rms_e_plot(:, 1)), "-", sprintf("Median: %0.2f $\\frac{m}{s^2}$", median(rms_e_plot(:, 1))), ...
+xline(median(rms_e_plot(:, 1)), "-", sprintf("Median: %0.2f $\\frac{cf}{s^2}$", median(rms_e_plot(:, 1))), ...
     "Color", colors(3, :), "LineWidth", 2*line_width, "Interpreter", "latex", "FontSize", font_size, ...
     "LabelHorizontalAlignment", "left");
-xlabel("RMS Error in Rate of Change of Lateral Velocity ($\dot{V}$) [$\frac{m}{s^2}$]");
+xlabel("RMS Error in Rate of Change of Lateral Velocity ($\dot{V}$) [$\frac{cf}{s^2}$]");
 nexttile;
 histogram(rms_e_plot(:, 2), n_bins); hold on;
 xline(mean(rms_e_plot(:, 2)), "-", sprintf("Mean: %0.2f $\\frac{rad}{s^2}$", mean(rms_e_plot(:, 2))), ...
@@ -113,47 +113,22 @@ xline(median(rms_e_plot(:, 2)), "-", sprintf("Median: %0.2f $\\frac{rad}{s^2}$",
 xlabel("RMS Error in Rate of Change of Yaw Rate ($\dot{r}$) [$\frac{rad}{s^2}$]");
 title(tiles, ...
     [sprintf("Histogram of RMS Error in Parameters Estimated via Least-Squares over %i Simulations", sum(which_plot)); ...
-    sprintf("$l = %i$ m, $c = %i$ $\\frac{N}{rad}$", l, c)], ...
+    sprintf("$l = %i$ cf, $c = %i$ $\\frac{N}{rad}$", l, c)], ...
     "Interpreter", "Latex", "FontSize", font_size);
-export_fig(fullfile(root, "hist_e_m-I"), "-png", "-pdf");
+export_fig(fullfile(root, "hist_e_cc"), "-png", "-pdf");
 
-%% Least squares function to estimate mass and moment of inertia
-
-function [a, rms_e] = lsq_mi(u, x, dt, v_x, l, c)
-    arguments
-        u (:, 1) double % Input vector
-        x (:, 2) double % (Observed) state vector
-        dt (1, 1) double % Timestep
-        v_x (1, 1) double % Longitudinal velocity
-        l (1, 1) double = 5 % Car length
-        c (1, 1) double = -10000 % Stiffness coefficient for both wheels
-    end
-
-    assert(height(u) == height(x));
-    
-    nt = height(u);
-    v_y = x(1:(end - 1), 1);
-    r = x(1:(end - 1), 2);
-    delta = u(1:(end - 1));
-    
-    x_fd = reshape(diff(x), [], 1)/dt + [v_x*r; zeros(size(r))];
-    H = [(2*c/v_x)*v_y - c*delta, zeros(nt - 1, 1); zeros(nt - 1, 1), ((l^2*c)/(2*v_x))*r - (l*c/2)*delta];
-    a = (H'*H)\H'*x_fd;
-    rms_e = sqrt((sum(reshape(x_fd - H*a, nt - 1, 2), 1).^2)/(nt - 1));
-end
-
-%% Least squares function to estimate cornering stiffness coefficients
+%% Least squares function to estimate tire cornering stiffness coefficients
 
 function [a, rms_e] = lsq_cc(u, x, dt, v_x, m, I, a, b)
     arguments
         u (:, 1) double % Input vector
         x (:, 2) double % (Observed) state vector
-        dt (1, 1) double % Timestep
-        v_x (1, 1) double % Longitudinal velocity
-        m (1, 1) double = 2500 % Car mass
-        I (1, 1) double = 5445 % Car yaw moment of inertia
-        a (1, 1) double = 1.441 % Distance from front axle to center of gravity
-        b (1, 1) double = 2.977 - 1.441 % Distance from rear axle to center of gravity
+        dt (1, 1) double % Timestep in s
+        v_x (1, 1) double % Longitudinal velocity in m/s
+        m (1, 1) double = 2500 % Car mass in kg
+        I (1, 1) double = 5445 % Car yaw moment of inertia in kg*m^2
+        a (1, 1) double = 1.441 % Distance from front axle to center of gravity in m
+        b (1, 1) double = 2.977 - 1.441 % Distance from rear axle to center of gravity in m
     end
 
     assert(height(u) == height(x));
@@ -164,7 +139,10 @@ function [a, rms_e] = lsq_cc(u, x, dt, v_x, m, I, a, b)
     delta = u(1:(end - 1));
     
     x_fd = reshape(diff(x), [], 1)/dt + [v_x*r; zeros(size(r))];
-    H = [(2*c/v_x)*v_y - c*delta, zeros(nt - 1, 1); zeros(nt - 1, 1), ((l^2*c)/(2*v_x))*r - (l*c/2)*delta];
+    H = [ ...
+        (1/(m*v_x))*v_y + (a/(m*v_x))*r - (1/m)*delta, (1/(m*v_x))*v_y - (b/(m*v_x))*r; ...
+        (a/(I*v_x))*v_y + ((a^2)/(I*v_x))*r - (a/I)*delta, -(b/(I*v_x))*v_y + ((b^2)/(I*v_x))*r ...
+        ];
     a = (H'*H)\H'*x_fd;
     rms_e = sqrt((sum(reshape(x_fd - H*a, nt - 1, 2), 1).^2)/(nt - 1));
 end
