@@ -144,16 +144,15 @@ end
 
 %% Least squares function to estimate cornering stiffness coefficients
 
-function [a, rms_e] = lsq_cc(u, x, dt, v_x, m, I, a, b)
+function [a, rms_e] = lsq_cc(u, x, dt, v_x, m, I)
     arguments
         u (:, 1) double % Input vector
         x (:, 2) double % (Observed) state vector
         dt (1, 1) double % Timestep
         v_x (1, 1) double % Longitudinal velocity
-        m (1, 1) double = 2500 % Car mass
-        I (1, 1) double = 5445 % Car yaw moment of inertia
-        a (1, 1) double = 1.441 % Distance from front axle to center of gravity
-        b (1, 1) double = 2.977 - 1.441 % Distance from rear axle to center of gravity
+        l (1, 1) double = 5 % Car length
+        m (1, 1) double = -10000 % Car mass
+        I (1, 1) double = 5e3 % Car yaw moment of inertia
     end
 
     assert(height(u) == height(x));
