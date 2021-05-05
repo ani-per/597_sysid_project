@@ -64,10 +64,7 @@ def collect_data(
 
     driving_states = []
     throttle_mag = rng.uniform(0.2, 0.35)
-    # throttle_mag = 0.35
-    throttle_freq = rng.uniform(0, 0.25)
     steering_mag = rng.uniform(-0.15, 0.15)
-    # steering_mag = -0.15
     steering_freq = rng.uniform(0, 1)
 
     for i in range(i_max):
@@ -179,64 +176,27 @@ client.enableApiControl(True)
 dt = 0.1
 t_max = 30
 i_max = int(np.ceil(t_max / dt))
-n_sim = 150
+n_sim = 500
 
-t_train = np.zeros([n_sim, 1, i_max])
-U_train = np.zeros([n_sim, 2, i_max])
-Z_train = np.zeros([n_sim, 6, i_max])
-t_test = np.zeros([n_sim, 1, i_max])
-U_test = np.zeros([n_sim, 2, i_max])
-Z_test = np.zeros([n_sim, 6, i_max])
+t = np.zeros([n_sim, 1, i_max])
+U = np.zeros([n_sim, 2, i_max])
+Z = np.zeros([n_sim, 6, i_max])
 
-train_rng = np.random.default_rng(seed=4)
+rng = np.random.default_rng(seed=4)
 for sim in range(n_sim):
-    print(f"Train: {sim}/{n_sim}")
-    (
-        t_train[sim, :, :],
-        U_train[sim, :, :],
-        Z_train[sim, :, :],
-        driving_df,
-    ) = collect_data(
+    print(f"Sim: {sim}/{n_sim}")
+    (t[sim, :, :], U[sim, :, :], Z[sim, :, :], driving_df,) = collect_data(
         client=client,
-        rng=train_rng,
+        rng=rng,
         dt=dt,
         t_max=t_max,
         offset=offset,
         traintest=0,
     )
-    # driving_df.to_csv(data_dir / f"data_train.csv", index=False)
+    # driving_df.to_csv(data_dir / f"data.csv", index=False)
 
-np.savez(data_dir / f"data_train_bulk.npz", t=t_train, U=U_train, Z=Z_train)
-spio.savemat(
-    data_dir / f"data_train_bulk.mat", {"t": t_train, "U": U_train, "Z": Z_train}
-)
-
-test_rng = np.random.default_rng(seed=6)
-for sim in range(n_sim):
-    print(f"Test: {sim}/{n_sim}")
-    t_test[sim, :, :], U_test[sim, :, :], Z_test[sim, :, :], driving_df = collect_data(
-        client=client,
-        rng=test_rng,
-        dt=dt,
-        t_max=t_max,
-        offset=offset,
-        traintest=1,
-    )
-    # driving_df.to_csv(data_dir / f"data_train.csv", index=False)
-
-np.savez(data_dir / f"data_test_bulk.npz", t=t_test, U=U_test, Z=Z_test)
-spio.savemat(data_dir / f"data_test_bulk.mat", {"t": t_test, "U": U_test, "Z": Z_test})
+np.savez(data_dir / f"data_bulk.npz", t=t, U=U, Z=Z)
+spio.savemat(data_dir / f"data_bulk.mat", {"t": t, "U": U, "Z": Z})
 
 reset_client(client)
 print(f"Elapsed time: {(time.time() - start_time)/60:0.4f} minutes.")
-
-# settings = {
-#     "SettingsVersion": "1.2",
-#     "SimMode": "Car",
-#     "OriginGeopoint": {
-#         "Latitude": 47.641468,
-#         "Longitude": -130.140165,
-#         "Altitude": 122,
-#     },
-# }
-# json.dump(settings, open(Path.cwd() / "settings.json", "w"))

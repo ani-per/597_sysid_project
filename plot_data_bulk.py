@@ -19,24 +19,19 @@ import control
 import textwrap
 
 
-def plot_data_bulk(train_file, test_file):
+def plot_data_bulk(fp):
     max_sim = 10
     start_index = 0
-    train_data = np.load(Path.cwd() / "data" / train_file)
-    t_train = train_data["t"].squeeze()[:max_sim, start_index:]
-    U_train = train_data["U"][:max_sim, :, start_index:]
-    Z_train = train_data["Z"][:max_sim, :, start_index:]
-
-    test_data = np.load(Path.cwd() / "data" / test_file)
-    t_test = test_data["t"].squeeze()[:max_sim, start_index:]
-    U_test = test_data["U"][:max_sim, :, start_index:]
-    Z_test = test_data["Z"][:max_sim, :, start_index:]
+    airsim_data = np.load(Path.cwd() / "data" / fp)
+    t = airsim_data["t"].squeeze()[:max_sim, start_index:]
+    U = airsim_data["U"][:max_sim, :, start_index:]
+    Z = airsim_data["Z"][:max_sim, :, start_index:]
 
     # Simulation dimensions
-    n_sim = t_train.shape[0]
-    r = U_train.shape[1]  # Number of inputs
-    m = Z_train.shape[1]  # Number of measurements
-    t_max = t_train[0, -1]  # Total simulation time
+    n_sim = t.shape[0]
+    r = U.shape[1]  # Number of inputs
+    m = Z.shape[1]  # Number of measurements
+    t_max = t[0, -1]  # Total simulation time
 
     wrapper = textwrap.TextWrapper(width=20)
     input_labels = [wrapper.fill(x) for x in ["Throttle", "$\delta$ (Steering Angle)"]]
@@ -62,37 +57,34 @@ def plot_data_bulk(train_file, test_file):
 
     for i in range(r):
         for j in range(n_sim):
-            axs[0][i].plot(t_train[j, :], U_train[j, i, :])
+            axs[0][i].plot(t[j, :], U[j, i, :])
             axs[0][i].annotate(
                 f"{j + 1}",
-                xy=(t_train[j, -1], U_train[j, i, -1]),
+                xy=(t[j, -1], U[j, i, -1]),
                 xytext=(0.75, 0),
                 textcoords="offset points",
                 fontsize=sim_fs,
             )
-            # axs[0][i].plot(t_test[j, :], U_test[j, i, :], "o", ms=ms, mfc="None")
         plt.setp(axs[0][i], xlim=[0, t_max])
         axs[0][i].set_ylabel(f"{input_labels[i]}", fontsize=fs)
         axs[0][i].tick_params(axis="y", labelsize=fs)
 
     for i, obs_ax in zip(range(m), axs[1:].flat):
         for j in range(n_sim):
-            obs_ax.plot(t_train[j, :], Z_train[j, i, :])
+            obs_ax.plot(t[j, :], Z[j, i, :])
             obs_ax.annotate(
                 f"{j + 1}",
-                xy=(t_train[j, -1], Z_train[j, i, -1]),
+                xy=(t[j, -1], Z[j, i, -1]),
                 xytext=(0.75, 0),
                 textcoords="offset points",
                 fontsize=sim_fs,
             )
-            # obs_ax.plot(t_test[j, :], Z_test[j, i, :], "o", ms=ms, mfc="None")
         plt.setp(obs_ax, xlim=[0, t_max])
         obs_ax.set_ylabel(f"{obs_labels[i]}", fontsize=fs)
         obs_ax.tick_params(axis="y", labelsize=fs)
         if i > (m - 2):
             plt.setp(obs_ax, xlabel=f"Time")
-    # fig.legend(labels=["Train", "Test"], bbox_to_anchor=(1, 0.5), loc=6)
     fig.savefig(Path.cwd() / "figs" / f"input_obs_bulk.pdf", bbox_inches="tight")
 
 
-plot_data_bulk("data_train_bulk.npz", "data_test_bulk.npz")
+plot_data_bulk("data_bulk.npz")
