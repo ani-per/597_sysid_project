@@ -8,10 +8,11 @@ close all; clear all;
 % |startup| is a script I wrote that sets up some plot properties and directories for saving the plots.
 
 startup;
+warning("off", "all");
 
 %% Data formatting
 
-airsim_data = load(fullfile(pwd, "data", "data_train_bulk.mat"));
+airsim_data = load(fullfile(pwd, "data", "data_bulk.mat"));
 t = squeeze(permute(airsim_data.t, [2, 3, 1]));
 U = squeeze(permute(airsim_data.U, [2, 3, 1]));
 Z = squeeze(permute(airsim_data.Z, [2, 3, 1]));
@@ -26,8 +27,8 @@ v_x = zeros(n_sim, 1) - 1;
 for n = 1:n_sim
     U_n = Z(3, :, n);
     for i = 1:length(U_n)
-        pf = polyfit(t(i:end, n), U_n(:, i:end), 1);
-        if (abs(pf(1)) < 1e-3)
+        pf = polyfit(t(i:end, n)', U_n(:, i:end), 1);
+        if (abs(pf(1)) < 5e-3)
             i_start(n) = i;
             t_start(n) = t(i);
             v_x(n) = mean(U_n(:, i:end));
@@ -82,7 +83,7 @@ xline(median(I_plot), "-", sprintf("Median: %0.0f $kg{\\cdot}m^2$", median(I_plo
     "LabelHorizontalAlignment", "left");
 xlabel("Moment of Inertia ($I_{zz}$) [$kg{\cdot}m^2$]");
 title(tiles, ...
-    [sprintf("Histogram of Parameters Estimated via Least-Squares over %i Simulations", n_sim); ...
+    [sprintf("Histogram of Parameters Estimated via Least-Squares over %i Simulations", sum(which_plot)); ...
     sprintf("$l = %i$ m, $c = %i$ $\\frac{N}{rad}$", l, c)], ...
     "Interpreter", "Latex", "FontSize", font_size);
 export_fig(fullfile(root, "hist_m-I"), "-png", "-pdf");
@@ -111,7 +112,7 @@ xline(median(rms_e_plot(:, 2)), "-", sprintf("Median: %0.2f $\\frac{rad}{s^2}$",
     "LabelHorizontalAlignment", "left");
 xlabel("RMS Error in Rate of Change of Yaw Rate ($\dot{r}$) [$\frac{rad}{s^2}$]");
 title(tiles, ...
-    [sprintf("Histogram of RMS Error in Parameters Estimated via Least-Squares over %i Simulations", n_sim); ...
+    [sprintf("Histogram of RMS Error in Parameters Estimated via Least-Squares over %i Simulations", sum(which_plot)); ...
     sprintf("$l = %i$ m, $c = %i$ $\\frac{N}{rad}$", l, c)], ...
     "Interpreter", "Latex", "FontSize", font_size);
 export_fig(fullfile(root, "hist_e_m-I"), "-png", "-pdf");
