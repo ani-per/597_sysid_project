@@ -179,7 +179,7 @@ client.enableApiControl(True)
 dt = 0.1
 t_max = 30
 i_max = int(np.ceil(t_max / dt))
-n_sim = 20
+n_sim = 150
 
 t_train = np.zeros([n_sim, 1, i_max])
 U_train = np.zeros([n_sim, 2, i_max])
