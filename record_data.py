@@ -176,14 +176,15 @@ client.enableApiControl(True)
 dt = 0.1
 t_max = 30
 i_max = int(np.ceil(t_max / dt))
-n_sim = 500
+n_sim = 3
 
 t = np.zeros([n_sim, 1, i_max])
 U = np.zeros([n_sim, 2, i_max])
 Z = np.zeros([n_sim, 6, i_max])
 
 rng = np.random.default_rng(seed=4)
-for sim in range(n_sim):
+for sim in range(2):
+    client.startRecording()
     print(f"Sim: {sim}/{n_sim}")
     (t[sim, :, :], U[sim, :, :], Z[sim, :, :], driving_df,) = collect_data(
         client=client,
@@ -193,26 +194,8 @@ for sim in range(n_sim):
         offset=offset,
         traintest=0,
     )
+    client.stopRecording()
     # driving_df.to_csv(data_dir / f"data.csv", index=False)
-
-np.savez(data_dir / f"data_bulk_mi.npz", t=t, U=U, Z=Z)
-spio.savemat(data_dir / f"data_bulk_mi.mat", {"t": t, "U": U, "Z": Z})
-
-rng = np.random.default_rng(seed=6)
-for sim in range(n_sim):
-    print(f"Sim: {sim}/{n_sim}")
-    (t[sim, :, :], U[sim, :, :], Z[sim, :, :], driving_df,) = collect_data(
-        client=client,
-        rng=rng,
-        dt=dt,
-        t_max=t_max,
-        offset=offset,
-        traintest=0,
-    )
-    # driving_df.to_csv(data_dir / f"data.csv", index=False)
-
-np.savez(data_dir / f"data_bulk_cc.npz", t=t, U=U, Z=Z)
-spio.savemat(data_dir / f"data_bulk_cc.mat", {"t": t, "U": U, "Z": Z})
 
 reset_client(client)
 print(f"Elapsed time: {(time.time() - start_time)/60:0.4f} minutes.")
