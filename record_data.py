@@ -63,9 +63,9 @@ def collect_data(
     Z = np.zeros([6, i_max])
 
     driving_states = []
-    throttle_mag = rng.uniform(0.2, 0.35)
-    steering_mag = rng.uniform(-0.15, 0.15)
-    steering_freq = rng.uniform(0, 1)
+    throttle_mag = 0.32
+    steering_mag = 0.14
+    steering_freq = 0.5
 
     for i in range(i_max):
 
@@ -182,10 +182,10 @@ t = np.zeros([n_sim, 1, i_max])
 U = np.zeros([n_sim, 2, i_max])
 Z = np.zeros([n_sim, 6, i_max])
 
-rng = np.random.default_rng(seed=4)
-for sim in range(2):
-    client.startRecording()
-    print(f"Sim: {sim}/{n_sim}")
+rng = np.random.default_rng(seed=8)
+# time.sleep(10)
+for sim in range(n_sim):
+    print(f"Sim: {sim + 1}/{n_sim}")
     (t[sim, :, :], U[sim, :, :], Z[sim, :, :], driving_df,) = collect_data(
         client=client,
         rng=rng,
@@ -194,7 +194,6 @@ for sim in range(2):
         offset=offset,
         traintest=0,
     )
-    client.stopRecording()
     # driving_df.to_csv(data_dir / f"data.csv", index=False)
 
 reset_client(client)
